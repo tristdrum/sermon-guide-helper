@@ -3,41 +3,32 @@ from openai import OpenAI
 import tempfile
 import os
 from dotenv import load_dotenv
-import pyperclip  # Add this import
 
 # Load environment variables and setup
 load_dotenv()
 st.set_page_config(page_title="Audio Transcription App")
 
-# Custom CSS for button colors
+# Custom CSS simplified with consistent blue theme
 st.markdown("""
     <style>
-        /* Start Transcribing button - Blue */
-        .stButton button[kind="primary"] {
+        /* Primary buttons (Start Transcribing, Download) */
+        .stButton button[kind="primary"],
+        .stButton button[data-testid="baseButton-secondary"],
+        .stDownloadButton button {
             background-color: rgba(0, 123, 255, 0.8);
             color: white;
-            border: 1px solid rgba(0, 123, 255, 0.8);
+            border: none;
             transition: all 0.3s ease;
         }
-        .stButton button[kind="primary"]:hover {
-            background-color: rgba(40, 167, 69, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        
-        /* Copy to Clipboard button - Blue */
-        .stButton button[data-testid="baseButton-secondary"] {
-            background-color: rgba(0, 123, 255, 0.8);
-            color: white;
-            transition: all 0.3s ease;
-        }
-        .stButton button[data-testid="baseButton-secondary"]:hover {
+        .stButton button[kind="primary"]:hover,
+        .stButton button[data-testid="baseButton-secondary"]:hover,
+        .stDownloadButton button:hover {
             background-color: rgba(0, 123, 255, 1);
             transform: translateY(-2px);
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
-        /* Reset button - Subtle Red */
+        /* Reset button */
         .stButton button[kind="secondary"] {
             background-color: rgba(220, 53, 69, 0.6);
             color: white;
@@ -49,23 +40,16 @@ st.markdown("""
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* Text Area - Hide border by default, show blue border on focus */
+        /* Text Area styling */
         .stTextArea textarea,
-        div[data-baseweb="textarea"] textarea {
-            border: 1px solid transparent !important;
-            transition: border-color 0.3s ease !important;
-        }
-        
+        div[data-baseweb="textarea"] textarea,
         .stTextArea div[data-baseweb="textarea"] {
             border: 1px solid transparent !important;
             transition: border-color 0.3s ease !important;
         }
 
         .stTextArea textarea:focus,
-        div[data-baseweb="textarea"] textarea:focus {
-            border-color: rgba(0, 123, 255, 0.8) !important;
-        }
-        
+        div[data-baseweb="textarea"] textarea:focus,
         .stTextArea div[data-baseweb="textarea"]:focus-within {
             border-color: rgba(0, 123, 255, 0.8) !important;
         }
@@ -140,11 +124,19 @@ if uploaded_file:
                 st.session_state.transcription = None
                 st.rerun()
 
-        # Copy button in right column (blue)
+        # Download button in right column (blue)
         with col2:
-            if st.button("Copy to Clipboard", 
-                        use_container_width=True,
-                        type="primary",  # primary with custom color
-                        help="Copy transcription to clipboard"):
-                pyperclip.copy(st.session_state.transcription)
-                st.success("✓ Copied to clipboard!")
+            original_filename = os.path.splitext(uploaded_file.name)[0]
+            download_filename = f"{original_filename}_transcription.txt"  # Simplified and ensured .txt suffix
+            
+            st.download_button(
+                label="Download Transcription",
+                data=st.session_state.transcription,
+                file_name=download_filename,
+                mime="text/plain",
+                use_container_width=True,
+                type="primary",
+                help="Download transcription as text file"
+            )
+            if st.session_state.get('download_clicked', False):
+                st.success("✓ Downloaded successfully!")
