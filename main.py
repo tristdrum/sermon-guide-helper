@@ -84,6 +84,8 @@ client = OpenAI(api_key=api_key)
 # Initialize session state
 if 'transcription' not in st.session_state:
     st.session_state.transcription = None
+if 'current_model' not in st.session_state:
+    st.session_state.current_model = None
 
 # Initialize session state for upload counter
 if 'upload_counter' not in st.session_state:
@@ -94,10 +96,8 @@ def transcribe_audio(file_path, model="whisper-1"):
         transcript = client.audio.transcriptions.create(
             model=model,
             file=audio_file,
-            response_format="text"  # Changed back to "text"
+            response_format="text",  # Changed back to "text"
         )
-        # Split the text into paragraphs based on natural breaks
-        # (double newlines or long pauses indicated by periods)
         paragraphs = [p.strip() for p in str(transcript).split('\n') if p.strip()]
         return paragraphs
 
@@ -107,39 +107,21 @@ uploaded_file = st.file_uploader("Upload an audio file",
     key=f"uploader_{st.session_state.upload_counter}")
 
 if uploaded_file:
-    # Add model selector after successful file upload
-    model = st.radio(
-        "Select Transcription Model",
-        ["Fastest (whisper-1)", "Balanced (whisper-medium)", "Highest Quality (whisper-large-v3)"],
-        horizontal=True,
-        index=0  # Default to fastest model
-    )
+    # Start transcription immediately after file upload
+    if not st.session_state.transcription:
+        with st.spinner('Transcribing audio...'):
+            # Save uploaded file temporarily
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
+                tmp_file.write(uploaded_file.getvalue())
+                tmp_file_path = tmp_file.name
 
-    # Convert display name to API model name
-    model_map = {
-        "Fastest (whisper-1)": "whisper-1",
-        "Balanced (whisper-medium)": "whisper-medium",
-        "Highest Quality (whisper-large-v3)": "whisper-large-v3"
-    }
-
-    # Add transcribe button - full width with updated text
-    if st.button("Start Transcribing", 
-                 use_container_width=True, 
-                 type="primary"):  # primary gives it a green color
-        if not st.session_state.transcription:
-            with st.spinner('Transcribing audio...'):
-                # Save uploaded file temporarily
-                with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
-                    tmp_file.write(uploaded_file.getvalue())
-                    tmp_file_path = tmp_file.name
-
-                try:
-                    # Use selected model for transcription
-                    paragraphs = transcribe_audio(tmp_file_path, model_map[model])
-                    # Join paragraphs with double newlines
-                    st.session_state.transcription = "\n\n".join(paragraphs)
-                finally:
-                    os.unlink(tmp_file_path)
+            try:
+                # Use whisper-1 model for transcription
+                paragraphs = transcribe_audio(tmp_file_path, "whisper-1")
+                # Join paragraphs with double newlines
+                st.session_state.transcription = "\n\n".join(paragraphs)
+            finally:
+                os.unlink(tmp_file_path)
 
     # Display transcription
     if st.session_state.transcription:
