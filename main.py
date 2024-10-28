@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from hashlib import sha256
 from hmac import compare_digest
 
-# Load environment variables and setup
+# Load environment variables and setup.
 load_dotenv()
 st.set_page_config(page_title="Audio Transcription App")
 
