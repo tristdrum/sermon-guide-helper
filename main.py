@@ -3,10 +3,45 @@ from openai import OpenAI
 import tempfile
 import os
 from dotenv import load_dotenv
+from hashlib import sha256
+from hmac import compare_digest
 
 # Load environment variables and setup
 load_dotenv()
 st.set_page_config(page_title="Audio Transcription App")
+
+# Add password verification function
+def verify_password(input_password, stored_password):
+    """Securely verify password using constant-time comparison"""
+    # Hash the input password using SHA-256
+    input_hash = sha256(input_password.encode()).hexdigest()
+    stored_hash = sha256(stored_password.encode()).hexdigest()
+    return compare_digest(input_hash, stored_hash)
+
+# Get password from environment variable
+APP_PASSWORD = os.getenv("APP_PASSWORD")
+if not APP_PASSWORD:
+    st.error("Application password not found. Please set APP_PASSWORD in your .env file.")
+    st.stop()
+
+# Initialize session state for authentication
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+
+# Title should be visible at all times
+st.title("Audio Transcription App")
+
+# Password protection
+if not st.session_state.authenticated:
+    password_input = st.text_input("Enter application password:", type="password")
+    
+    if st.button("Login"):
+        if verify_password(password_input, APP_PASSWORD):
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Incorrect password. Please try again.")
+    st.stop()
 
 # Custom CSS simplified with consistent blue theme
 st.markdown("""
@@ -55,8 +90,6 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
-
-st.title("Audio Transcription App")
 
 # Initialize OpenAI client
 api_key = os.getenv("OPENAI_API_KEY")
