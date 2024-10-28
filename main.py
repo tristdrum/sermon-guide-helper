@@ -21,6 +21,10 @@ client = OpenAI(api_key=api_key)
 if 'transcription' not in st.session_state:
     st.session_state.transcription = None
 
+# Initialize session state for upload counter
+if 'upload_counter' not in st.session_state:
+    st.session_state.upload_counter = 0
+
 def transcribe_audio(file_path):
     with open(file_path, "rb") as audio_file:
         transcript = client.audio.transcriptions.create(
@@ -30,8 +34,10 @@ def transcribe_audio(file_path):
         )
         return transcript
 
-# File uploader
-uploaded_file = st.file_uploader("Upload an audio file", type=['mp3', 'wav', 'mpeg', 'm4a'])
+# File uploader with dynamic key
+uploaded_file = st.file_uploader("Upload an audio file", 
+    type=['mp3', 'wav', 'mpeg', 'm4a'],
+    key=f"uploader_{st.session_state.upload_counter}")  # Add dynamic key
 
 if uploaded_file:
     if not st.session_state.transcription:  # Only transcribe if we haven't already
@@ -55,7 +61,11 @@ if uploaded_file:
             pyperclip.copy(st.session_state.transcription)
             st.success("✓ Copied to clipboard!")  # Using success for better visual feedback
 
-# Clear button to reset the app
-if st.button("Clear"):
-    st.session_state.transcription = None
-    st.experimental_rerun()
+    # Only show Reset button if a file was uploaded
+    if st.button("Reset"):
+        # Increment counter to force new file uploader instance
+        st.session_state.upload_counter += 1
+        # Clear transcription
+        st.session_state.transcription = None
+        # Rerun the app
+        st.rerun()
