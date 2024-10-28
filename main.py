@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from hashlib import sha256
 from hmac import compare_digest
 
-# Load environment variables and setup.
+# Load environment variables and setup
 load_dotenv()
 st.set_page_config(page_title="Audio Transcription App")
 
@@ -19,7 +19,10 @@ def verify_password(input_password, stored_password):
     return compare_digest(input_hash, stored_hash)
 
 # Get password from environment variable
-APP_PASSWORD = st.secrets["APP_PASSWORD"]
+APP_PASSWORD = os.getenv("APP_PASSWORD")
+if not APP_PASSWORD:
+    st.error("Application password not found. Please set APP_PASSWORD in your .env file.")
+    st.stop()
 
 # Initialize session state for authentication
 if 'authenticated' not in st.session_state:
@@ -89,7 +92,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Initialize OpenAI client
-api_key = st.secrets["OPENAI_API_KEY"]
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    st.error("OpenAI API key not found. Please check your .env file.")
+    st.stop()
 client = OpenAI(api_key=api_key)
 
 # Initialize session state
